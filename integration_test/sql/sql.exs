@@ -52,6 +52,18 @@ defmodule Ecto.Integration.SQLTest do
     assert sql =~ "barebones"
   end
 
+  test "to_sql/3 with union then intersect" do
+    base_query = from p in "posts", select: [p.body]
+    union_query = from c in "comments", select: [c.body], union: ^base_query
+    # the test passes if you comment out these two lines
+    {sql, []} = TestRepo.to_sql(:all, union_query)
+    assert sql =~ "UNION"
+
+    intersect_query = from c in "comments", select: [c.body], intersect: ^base_query
+    {sql, []} = TestRepo.to_sql(:all, intersect_query)
+    assert sql =~ "INTERSECT"
+  end
+
   test "raises when primary key is not unique on struct operation" do
     schema = %CorruptedPk{a: "abc"}
     TestRepo.insert!(schema)
